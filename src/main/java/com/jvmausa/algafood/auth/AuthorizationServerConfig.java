@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.config.annotation.configurers.ClientD
 import org.springframework.security.oauth2.config.annotation.web.configuration.AuthorizationServerConfigurerAdapter;
 import org.springframework.security.oauth2.config.annotation.web.configuration.EnableAuthorizationServer;
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerEndpointsConfigurer;
+import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 
 @Configuration
 @EnableAuthorizationServer
@@ -31,13 +32,17 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 			.secret(passwordEncoder.encode("web123"))
 			.authorizedGrantTypes("password")
 			.scopes("write", "read")
-			.accessTokenValiditySeconds(100)
+			.accessTokenValiditySeconds(1000)
 		.and()
-			.inMemory()
-			.withClient("app-mobile")
-			.secret(passwordEncoder.encode("web123"))
-			.authorizedGrantTypes("password")
-			.scopes("write", "read");
+			.withClient("checktoken")
+			.secret(passwordEncoder.encode("checktoken123"));
+	}
+	
+	@Override
+	public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
+		security.checkTokenAccess("permitAll()");
+//		security.checkTokenAccess("isAuthenticated()");
+
 	}
 	
 	
