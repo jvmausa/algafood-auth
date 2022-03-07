@@ -21,102 +21,81 @@ import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFacto
 
 @Configuration
 @EnableAuthorizationServer
-public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter{
+public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdapter {
 
 	@Autowired
 	private PasswordEncoder passwordEncoder;
-	
+
 	@Autowired
 	private AuthenticationManager authenticationManager;
-	
+
 	@Autowired
 	private UserDetailsService userDetailService;
-	
-	
-	/*COnfigurar os clients que podem acessar esse authorizationServer e depois vão acessar os recursos protegidos
-		no resource server(aplicação)*/
-	
+
+	@Autowired
+	private JwtKeyStoreProperties jwtKeyStoreProperties;
+
+	/*
+	 * COnfigurar os clients que podem acessar esse authorizationServer e depois vão
+	 * acessar os recursos protegidos no resource server(aplicação)
+	 */
+
 	@Override
 	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-		clients
-		.inMemory()
-			.withClient("algafood-web")
-			.secret(passwordEncoder.encode("web123"))
-			.authorizedGrantTypes("password", "refresh_token")
-			.scopes("write", "read")
+		clients.inMemory().withClient("algafood-web").secret(passwordEncoder.encode("web123"))
+				.authorizedGrantTypes("password", "refresh_token").scopes("write", "read")
 //			.accessTokenValiditySeconds(300)
 //			.refreshTokenValiditySeconds(600)
-		.and()
-			.withClient("faturamento")
-			.secret(passwordEncoder.encode("faturamento123"))
-			.authorizedGrantTypes("client_credentials")
-			.scopes("read")
-		.and()
-			.withClient("foodanalystics")
-			.secret(passwordEncoder.encode("food123"))
-			.authorizedGrantTypes("authorization_code")
-			.scopes("write", "read")
-			.redirectUris("http://aplicacao-cliente")
-		.and()
-			/*não recomendado
-			.withClient("webadmin")
-			.authorizedGrantTypes("implicit")
-			.scopes("write", "read")
-			.redirectUris("http://aplicacao-cliente")
-		.and()		
-			 */
-			.withClient("checktoken")
-			.secret(passwordEncoder.encode("checktoken123"));
-		
+				.and().withClient("faturamento").secret(passwordEncoder.encode("faturamento123"))
+				.authorizedGrantTypes("client_credentials").scopes("read").and().withClient("foodanalystics")
+				.secret(passwordEncoder.encode("food123")).authorizedGrantTypes("authorization_code")
+				.scopes("write", "read").redirectUris("http://aplicacao-cliente").and()
+				/*
+				 * não recomendado .withClient("webadmin") .authorizedGrantTypes("implicit")
+				 * .scopes("write", "read") .redirectUris("http://aplicacao-cliente") .and()
+				 */
+				.withClient("checktoken").secret(passwordEncoder.encode("checktoken123"));
+
 	}
-	
+
 	@Override
 	public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
-		security.checkTokenAccess("permitAll()")
-		.allowFormAuthenticationForClients();
+		security.checkTokenAccess("permitAll()").allowFormAuthenticationForClients();
 //		security.checkTokenAccess("isAuthenticated()");
 
 	}
-	
-	
+
 	@Override
 	public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-		endpoints
-			.authenticationManager(authenticationManager)
-			.userDetailsService(userDetailService)
-			.reuseRefreshTokens(false)
-			.accessTokenConverter(jwtAccessTokenConverter())
-			.tokenGranter(tokenGranter(endpoints));
+		endpoints.authenticationManager(authenticationManager).userDetailsService(userDetailService)
+				.reuseRefreshTokens(false).accessTokenConverter(jwtAccessTokenConverter())
+				.tokenGranter(tokenGranter(endpoints));
 	}
-	
+
 	@Bean
 	public JwtAccessTokenConverter jwtAccessTokenConverter() {
-		JwtAccessTokenConverter jwtAccessTokenConverter = new JwtAccessTokenConverter();
-//		jwtAccessTokenConverter.setSigningKey("SECRET-KEY-TEM-QUE-TER-NO-MÍNIMO-32-BYTES");
-		
-		var jkwResource = new ClassPathResource("keystore/algafood.jks");
-		var keyStorePass = "123456";
-		var keyPairAlias = "algafood";
-		
-		var keyStoreKeyFactory = new KeyStoreKeyFactory(jkwResource, keyStorePass.toCharArray());
+		var jwtAccessTokenConverter = new JwtAccessTokenConverter();
+
+		var jksResource = new ClassPathResource(jwtKeyStoreProperties.getPath());
+		var keyStorePass = jwtKeyStoreProperties.getPassword();
+		var keyPairAlias = jwtKeyStoreProperties.getKeypairAlias();
+
+		var keyStoreKeyFactory = new KeyStoreKeyFactory(jksResource, keyStorePass.toCharArray());
 		var keyPair = keyStoreKeyFactory.getKeyPair(keyPairAlias);
-		
-		
+
 		jwtAccessTokenConverter.setKeyPair(keyPair);
-		
+
 		return jwtAccessTokenConverter;
 	}
 
-	
 	private TokenGranter tokenGranter(AuthorizationServerEndpointsConfigurer endpoints) {
 		var pkceAuthorizationCodeTokenGranter = new PkceAuthorizationCodeTokenGranter(endpoints.getTokenServices(),
 				endpoints.getAuthorizationCodeServices(), endpoints.getClientDetailsService(),
 				endpoints.getOAuth2RequestFactory());
-		
-		var granters = Arrays.asList(
-				pkceAuthorizationCodeTokenGranter, endpoints.getTokenGranter());
-		
+
+		var granters = Arrays.asList(pkceAuthorizationCodeTokenGranter, endpoints.getTokenGranter());
+
 		return new CompositeTokenGranter(granters);
 	}
-	
+
 }
