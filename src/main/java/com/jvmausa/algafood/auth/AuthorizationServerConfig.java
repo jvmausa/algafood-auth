@@ -4,6 +4,7 @@ import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -14,6 +15,8 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.TokenGranter;
+import org.springframework.security.oauth2.provider.token.TokenStore;
+import org.springframework.security.oauth2.provider.token.store.redis.RedisTokenStore;
 
 @Configuration
 @EnableAuthorizationServer
@@ -28,6 +31,10 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 	@Autowired
 	private UserDetailsService userDetailService;
 	
+	@Autowired
+	private RedisConnectionFactory redisConnectionFactory;
+	
+	
 	/*COnfigurar os clients que podem acessar esse authorizationServer e depois vão acessar os recursos protegidos
 		no resource server(aplicação)*/
 	
@@ -39,8 +46,8 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 			.secret(passwordEncoder.encode("web123"))
 			.authorizedGrantTypes("password", "refresh_token")
 			.scopes("write", "read")
-			.accessTokenValiditySeconds(15)
-			.refreshTokenValiditySeconds(30)
+			.accessTokenValiditySeconds(300)
+			.refreshTokenValiditySeconds(600)
 		.and()
 			.withClient("faturamento")
 			.secret(passwordEncoder.encode("faturamento123"))
@@ -80,9 +87,15 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 			.authenticationManager(authenticationManager)
 			.userDetailsService(userDetailService)
 			.reuseRefreshTokens(false)
+			.tokenStore(redisTokenStore())
 			.tokenGranter(tokenGranter(endpoints));
 	}
 
+	private TokenStore redisTokenStore() {
+		return new RedisTokenStore(redisConnectionFactory);
+		
+	}
+	
 	private TokenGranter tokenGranter(AuthorizationServerEndpointsConfigurer endpoints) {
 		var pkceAuthorizationCodeTokenGranter = new PkceAuthorizationCodeTokenGranter(endpoints.getTokenServices(),
 				endpoints.getAuthorizationCodeServices(), endpoints.getClientDetailsService(),
