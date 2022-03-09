@@ -1,4 +1,4 @@
-package com.jvmausa.algafood.auth;
+package com.jvmausa.algafood.auth.core;
 
 import java.util.Arrays;
 
@@ -96,7 +96,6 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 	private ApprovalStore approvalStore(TokenStore tokenStore) {
 		var approvalStore = new TokenApprovalStore();
 		approvalStore.setTokenStore(tokenStore);
-		
 		
 		return approvalStore;
 	}

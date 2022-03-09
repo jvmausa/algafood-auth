@@ -1,4 +1,4 @@
-package com.jvmausa.algafood.auth;
+package com.jvmausa.algafood.auth.core;
 
 //Solução baseada em: https://github.com/spring-projects/spring-security-oauth/pull/675/files
 

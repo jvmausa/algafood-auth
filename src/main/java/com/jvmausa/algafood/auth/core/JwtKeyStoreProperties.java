@@ -1,4 +1,4 @@
-package com.jvmausa.algafood.auth;
+package com.jvmausa.algafood.auth.core;
 
 import javax.validation.constraints.NotBlank;
 
