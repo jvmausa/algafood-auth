@@ -1,3 +1,4 @@
-# Authorization Server
+# OAuth2 Authorization Server
 
- - Authorization server configured with PKCE Code
+ - Configured with PKCE Code
+ - JWT validation with Public Key
