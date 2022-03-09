@@ -98,7 +98,7 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 		approvalStore.setTokenStore(tokenStore);
 		
 		
-		return null;
+		return approvalStore;
 	}
 	
 	
