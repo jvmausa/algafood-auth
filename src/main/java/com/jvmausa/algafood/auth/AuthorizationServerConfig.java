@@ -16,6 +16,9 @@ import org.springframework.security.oauth2.config.annotation.web.configurers.Aut
 import org.springframework.security.oauth2.config.annotation.web.configurers.AuthorizationServerSecurityConfigurer;
 import org.springframework.security.oauth2.provider.CompositeTokenGranter;
 import org.springframework.security.oauth2.provider.TokenGranter;
+import org.springframework.security.oauth2.provider.approval.ApprovalStore;
+import org.springframework.security.oauth2.provider.approval.TokenApprovalStore;
+import org.springframework.security.oauth2.provider.token.TokenStore;
 import org.springframework.security.oauth2.provider.token.store.JwtAccessTokenConverter;
 import org.springframework.security.oauth2.provider.token.store.KeyStoreKeyFactory;
 
@@ -42,36 +45,63 @@ public class AuthorizationServerConfig extends AuthorizationServerConfigurerAdap
 
 	@Override
 	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-		clients.inMemory().withClient("algafood-web").secret(passwordEncoder.encode("web123"))
-				.authorizedGrantTypes("password", "refresh_token").scopes("write", "read")
+		
+		clients
+			.inMemory()
+			.withClient("algafood-web")
+			.secret(passwordEncoder.encode("web123"))
+			.authorizedGrantTypes("password", "refresh_token")
+			.scopes("write", "read")
 //			.accessTokenValiditySeconds(300)
 //			.refreshTokenValiditySeconds(600)
-				.and().withClient("faturamento").secret(passwordEncoder.encode("faturamento123"))
-				.authorizedGrantTypes("client_credentials").scopes("read").and().withClient("foodanalystics")
-				.secret(passwordEncoder.encode("food123")).authorizedGrantTypes("authorization_code")
-				.scopes("write", "read").redirectUris("http://aplicacao-cliente").and()
-				/*
-				 * não recomendado .withClient("webadmin") .authorizedGrantTypes("implicit")
-				 * .scopes("write", "read") .redirectUris("http://aplicacao-cliente") .and()
-				 */
-				.withClient("checktoken").secret(passwordEncoder.encode("checktoken123"));
+		.and()
+			.withClient("faturamento")
+			.secret(passwordEncoder.encode("faturamento123"))
+			.authorizedGrantTypes("client_credentials")
+			.scopes("read").and().withClient("foodanalytics")
+			.secret(passwordEncoder.encode("food123"))
+			.authorizedGrantTypes("authorization_code")
+			.scopes("write", "read")
+			.redirectUris("http://aplicacao-cliente")
+//		.and() *nao recomendado*
+//			.withClient("webadmin") 
+//		    .authorizedGrantTypes("implicit")
+//			.scopes("write", "read") .redirectUris("http://aplicacao-cliente") 
+		.and()
+			.withClient("checktoken")
+			.secret(passwordEncoder.encode("checktoken123"));
 
 	}
 
 	@Override
 	public void configure(AuthorizationServerSecurityConfigurer security) throws Exception {
-		security.checkTokenAccess("permitAll()").allowFormAuthenticationForClients();
+		security.checkTokenAccess("permitAll()")
+		.tokenKeyAccess("permitAll()")
+		.allowFormAuthenticationForClients();
 //		security.checkTokenAccess("isAuthenticated()");
 
 	}
 
 	@Override
 	public void configure(AuthorizationServerEndpointsConfigurer endpoints) throws Exception {
-		endpoints.authenticationManager(authenticationManager).userDetailsService(userDetailService)
-				.reuseRefreshTokens(false).accessTokenConverter(jwtAccessTokenConverter())
-				.tokenGranter(tokenGranter(endpoints));
+		endpoints
+			.authenticationManager(authenticationManager)
+			.userDetailsService(userDetailService)
+			.reuseRefreshTokens(false)
+			.accessTokenConverter(jwtAccessTokenConverter())
+			.approvalStore(approvalStore(endpoints.getTokenStore()))
+			.tokenGranter(tokenGranter(endpoints));
 	}
 
+	private ApprovalStore approvalStore(TokenStore tokenStore) {
+		var approvalStore = new TokenApprovalStore();
+		approvalStore.setTokenStore(tokenStore);
+		
+		
+		return null;
+	}
+	
+	
 	@Bean
 	public JwtAccessTokenConverter jwtAccessTokenConverter() {
 		var jwtAccessTokenConverter = new JwtAccessTokenConverter();
